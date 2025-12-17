@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genuss am Hof - Seminar Konfigurator</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="logo_favicon.png">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Alpine.js Plugins -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#ce7e40', // Gold
+                        dark: '#3c3c3b', // Text/Dark
+                        bg: '#f9f7f2', // Light warm beige
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    boxShadow: {
+                        'premium': '0 10px 30px -5px rgba(0, 0, 0, 0.05)',
+                        'card-active': '0 10px 25px -5px rgba(206, 126, 64, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+
+        /* Custom Scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f9f7f2;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e5e0d8;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ce7e40;
+        }
+
+        /* Smooth transitions */
+        .step-transition {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-bg text-dark font-sans antialiased min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 pb-24">
+
+    <!-- Header -->
+    <header class="w-full max-w-3xl flex justify-between items-center mb-8 sm:mb-12">
+        <div class="flex items-center gap-4">
+            <img src="logo.png" alt="Genuss am Hof" class="h-32 md:h-40 w-auto object-contain">
+            <!-- <div class="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-primary">Genuss am Hof</div> -->
+        </div>
+        <div class="text-sm font-medium opacity-60 tracking-wide uppercase">Seminar Planer</div>
+    </header>
+
+    <!-- Main App Container -->
+    <main class="w-full max-w-3xl relative" x-data="seminarConfig()" x-init="init()" x-cloak>
+        <!-- Progress Bar -->
+        <div class="mb-10 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+            <div class="bg-primary h-1.5 rounded-full transition-all duration-500 ease-out"
+                :style="'width: ' + (step / 4 * 100) + '%'"></div>
+        </div>
+
+        <!-- Form Cards Container -->
+        <div
+            class="bg-white rounded-[2rem] shadow-premium p-6 sm:p-10 min-h-[500px] relative overflow-hidden ring-1 ring-black/5">
+
+            <!-- Step 1: Basics -->
+            <div x-show="step === 1" x-transition:enter="transition ease-out duration-300 transform"
+                x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0"
+                x-transition:leave="transition ease-in duration-200 transform"
+                x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-8"
+                class="absolute inset-0 p-6 sm:p-10 overflow-y-auto">
+                <h2 class="text-3xl font-serif font-bold mb-2">Willkommen</h2>
+                <p class="text-gray-500 mb-8">Beginnen wir mit den Rahmendaten für Ihr Seminar.</p>
+
+                <div class="space-y-6">
+                    <!-- Customer Data (New Feature) -->
+                    <template x-if="isExistingCustomer">
+                        <div class="bg-primary/10 p-4 rounded-xl border border-primary/20 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="text-xs text-primary uppercase font-bold tracking-wider">Willkommen zurück
+                                </div>
+                                <div class="font-serif font-bold text-lg" x-text="customerName"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="!isExistingCustomer">
+                        <div class="space-y-4">
+                            <h3 class="font-serif font-bold text-lg">Ihre Kontaktdaten</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-gray-500">Vorname *</label>
+                                    <input type="text" x-model="newCustomer.firstname"
+                                        class="w-full bg-bg border-none rounded-xl p-3 focus:ring-2 focus:ring-primary/50 outline-none shadow-inner">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-gray-500">Nachname *</label>
+                                    <input type="text" x-model="newCustomer.lastname"
+                                        class="w-full bg-bg border-none rounded-xl p-3 focus:ring-2 focus:ring-primary/50 outline-none shadow-inner">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1 text-gray-500">Firma</label>
+                                <input type="text" x-model="newCustomer.company"
+                                    class="w-full bg-bg border-none rounded-xl p-3 focus:ring-2 focus:ring-primary/50 outline-none shadow-inner">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-gray-500">E-Mail *</label>
+                                    <input type="email" x-model="newCustomer.email"
+                                        class="w-full bg-bg border-none rounded-xl p-3 focus:ring-2 focus:ring-primary/50 outline-none shadow-inner">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-gray-500">Telefon</label>
+                                    <input type="tel" x-model="newCustomer.phone"
+                                        class="w-full bg-bg border-none rounded-xl p-3 focus:ring-2 focus:ring-primary/50 outline-none shadow-inner">
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <div>
+                        <label
+                            class="block text-sm font-medium mb-2 uppercase tracking-wider text-gray-500">Datum</label>
+                        <input type="date" x-model="date"
+                            class="w-full bg-bg border-none rounded-xl p-4 text-lg focus:ring-2 focus:ring-primary/50 transition-shadow outline-none text-dark shadow-inner"
+                            placeholder="Wählen Sie ein Datum">
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-sm font-medium mb-2 uppercase tracking-wider text-gray-500">Teilnehmeranzahl</label>
+                        <div class="flex items-center bg-bg rounded-xl p-2 w-full max-w-[200px] shadow-inner">
+                            <button @click="if(participants > 1) participants--"
+                                class="w-10 h-10 rounded-lg flex items-center justify-center text-primary bg-white shadow-sm hover:scale-105 transition-transform">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </button>
+                            <span x-text="participants" class="flex-1 text-center text-xl font-bold font-serif"></span>
+                            <button @click="participants++"
+                                class="w-10 h-10 rounded-lg flex items-center justify-center text-primary bg-white shadow-sm hover:scale-105 transition-transform">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Package & Rooms -->
+            <div x-show="step === 2" x-transition:enter="transition ease-out duration-300 transform"
+                x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0"
+                x-transition:leave="transition ease-in duration-200 transform"
+                x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-8"
+                class="absolute inset-0 p-6 sm:p-10 overflow-y-auto">
+                <h2 class="text-3xl font-serif font-bold mb-2">Paket & Aufenthalt</h2>
+                <p class="text-gray-500 mb-8">Wählen Sie Ihre Verpflegungspauschale.</p>
+
+                <!-- Packages -->
+                <div class="grid sm:grid-cols-2 gap-4 mb-10">
+                    <!-- Package: Half -->
+                    <div @click="packageType = 'half'"
+                        class="cursor-pointer border-2 rounded-2xl p-6 transition-all duration-300 relative group"
+                        :class="packageType === 'half' ? 'border-primary bg-primary/5 shadow-card-active' : 'border-gray-100 hover:border-primary/30'">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="font-serif text-xl font-bold">Halbtags</span>
+                            <span class="text-primary font-bold text-lg">€49</span>
+                        </div>
+                        <ul class="text-sm text-gray-500 space-y-2 mb-6">
+                            <li class="flex items-center"><span
+                                    class="w-1.5 h-1.5 rounded-full bg-primary/50 mr-2"></span>1x Kaffeepause</li>
+                            <li class="flex items-center"><span
+                                    class="w-1.5 h-1.5 rounded-full bg-primary/50 mr-2"></span>Mittagessen (3-Gänge)
+                            </li>
+                            <li class="flex items-center"><span
+                                    class="w-1.5 h-1.5 rounded-full bg-primary/50 mr-2"></span>Raummiete (4h)</li>
+                        </ul>
+                        <div class="absolute bottom-6 right-6">
+                            <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors"
+                                :class="packageType === 'half' ? 'border-primary bg-primary' : 'border-gray-300'">
+                                <svg x-show="packageType === 'half'" xmlns="http://www.w3.org/2000/svg"
+                                    class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Package: Full -->
+                    <div @click="packageType = 'full'"
+                        class="cursor-pointer border-2 rounded-2xl p-6 transition-all duration-300 relative group"
+                        :class="packageType === 'full' ? 'border-primary bg-primary/5 shadow-card-active' : 'border-gray-100 hover:border-primary/30'">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="font-serif text-xl font-bold">Ganztags</span>
+                            <span class="text-primary font-bold text-lg">€68</span>
+                        </div>
+                        <ul class="text-sm text-gray-500 space-y-2 mb-6">
+                            <li class="flex items-center"><span
+                                    class="w-1.5 h-1.5 rounded-full bg-primary/50 mr-2"></span>2x Kaffeepause</li>
+                            <li class="flex items-center"><span
+                                    class="w-1.5 h-1.5 rounded-full bg-primary/50 mr-2"></span>Mittagessen (3-Gänge)
+                            </li>
+                            <li class="flex items-center"><span
+                                    class="w-1.5 h-1.5 rounded-full bg-primary/50 mr-2"></span>Raummiete (8h)</li>
+                        </ul>
+                        <div class="absolute bottom-6 right-6">
+                            <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors"
+                                :class="packageType === 'full' ? 'border-primary bg-primary' : 'border-gray-300'">
+                                <svg x-show="packageType === 'full'" xmlns="http://www.w3.org/2000/svg"
+                                    class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rooms -->
+                <div class="border-t border-gray-100 pt-8">
+                    <div class="flex items-center justify-between cursor-pointer" @click="room = !room">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-bg flex items-center justify-center text-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M3 20v-8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v8"></path>
+                                    <path d="M6 10V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-lg">Hotelzimmer</div>
+                                <div class="text-sm text-gray-500">Übernachtung inkl. Frühstück (€103 p.P.)</div>
+                            </div>
+                        </div>
+                        <div class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-300"
+                            :class="room ? 'bg-primary' : 'bg-gray-200'">
+                            <span
+                                class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-300 shadow-sm"
+                                :class="room ? 'translate-x-7' : 'translate-x-1'"></span>
+                        </div>
+                    </div>
+
+                    <div x-show="room" x-collapse class="mt-4 pl-16">
+                        <label class="block text-sm font-medium mb-2 text-gray-500">Anzahl Zimmer</label>
+                        <div class="flex items-center bg-bg rounded-xl p-2 w-[160px]">
+                            <button @click="if(roomCount > 1) roomCount--"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center text-primary bg-white shadow-sm hover:scale-105"><svg
+                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg></button>
+                            <span x-text="roomCount" class="flex-1 text-center font-bold"></span>
+                            <button @click="roomCount++"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center text-primary bg-white shadow-sm hover:scale-105"><svg
+                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Catering & Activities -->
+            <div x-show="step === 3" x-transition:enter="transition ease-out duration-300 transform"
+                x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0"
+                x-transition:leave="transition ease-in duration-200 transform"
+                x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-8"
+                class="absolute inset-0 p-6 sm:p-10 overflow-y-auto">
+                <h2 class="text-3xl font-serif font-bold mb-2">Abend & Extras</h2>
+                <p class="text-gray-500 mb-8">Gestalten Sie den Abend und gemeinsame Aktivitäten.</p>
+
+                <!-- Dinner Toggle -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between cursor-pointer" @click="toggleDinner()">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-bg flex items-center justify-center text-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M18 8v7a4 4 0 0 1-8 0V8"></path>
+                                    <path d="M14 3v5"></path>
+                                    <path d="M22 6a4 4 0 0 1-4 4 4 4 0 0 1-4-4"></path>
+                                    <path d="M2 13.5V6a4 4 0 0 1 4 4 4 4 0 0 1 4-4v7.5a4 4 0 0 1-8 0Z"></path>
+                                    <line x1="10" y1="2" x2="10" y2="13.5"></line>
+                                    <path d="m2 13.5 2 1.5 2-1.5 2 1.5 2-1.5"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-lg">Abendessen (3-Gänge)</div>
+                                <div class="text-sm text-gray-500">Saisonal & Regional (€39 p.P.)</div>
+                            </div>
+                        </div>
+                        <div class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-300"
+                            :class="dinner ? 'bg-primary' : 'bg-gray-200'">
+                            <span
+                                class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-300 shadow-sm"
+                                :class="dinner ? 'translate-x-7' : 'translate-x-1'"></span>
+                        </div>
+                    </div>
+                    <div x-show="dinner" x-collapse class="mt-4 pl-16">
+                        <label class="block text-sm font-medium mb-2 text-gray-500">Anzahl Personen</label>
+                        <div class="flex items-center bg-bg rounded-xl p-2 w-[160px]">
+                            <button @click="if(dinnerCount > 1) dinnerCount--"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center text-primary bg-white shadow-sm hover:scale-105"><svg
+                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg></button>
+                            <span x-text="dinnerCount" class="flex-1 text-center font-bold"></span>
+                            <button @click="dinnerCount++"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center text-primary bg-white shadow-sm hover:scale-105"><svg
+                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 mb-8">
+                    <!-- Wine (Dependent on Dinner) -->
+                    <div @click="if(!isWineDisabled) extras.wine = !extras.wine"
+                        class="flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200"
+                        :class="[
+                            isWineDisabled ? 'opacity-40 cursor-not-allowed border-gray-100 bg-gray-50' : 'cursor-pointer',
+                            !isWineDisabled && extras.wine ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-300'
+                        ]">
+                        <div class="flex items-center gap-3">
+                            <!-- Custom Checkbox -->
+                            <div class="w-6 h-6 rounded border-2 flex items-center justify-center transition-colors"
+                                :class="extras.wine && !isWineDisabled ? 'border-primary bg-primary' : 'border-gray-300'">
+                                <svg x-show="extras.wine" class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="4" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <span class="font-medium">Weinbegleitung (+ €22)</span>
+                        </div>
+                    </div>
+
+                    <!-- Snacks -->
+                    <div @click="extras.sandwiches = !extras.sandwiches"
+                        class="flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer"
+                        :class="extras.sandwiches ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-300'">
+                        <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 rounded border-2 flex items-center justify-center transition-colors"
+                                :class="extras.sandwiches ? 'border-primary bg-primary' : 'border-gray-300'">
+                                <svg x-show="extras.sandwiches" class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <span class="font-medium">Sandwiches im Seminarraum (+ €7)</span>
+                        </div>
+                    </div>
+
+                    <div @click="extras.salad = !extras.salad"
+                        class="flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer"
+                        :class="extras.salad ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-300'">
+                        <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 rounded border-2 flex items-center justify-center transition-colors"
+                                :class="extras.salad ? 'border-primary bg-primary' : 'border-gray-300'">
+                                <svg x-show="extras.salad" class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <span class="font-medium">Salatbuffet zum Mittag (+ €15)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-100 pt-6">
+                    <h3 class="font-serif font-bold text-lg mb-4">Erlebnisse</h3>
+
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <!-- Cooking Class -->
+                        <div @click="toggleCookingClass()"
+                            class="cursor-pointer border-2 rounded-2xl p-5 transition-all duration-300"
+                            :class="activities.cookingClass ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-300'">
+                            <div class="font-bold mb-1">Kochkurs</div>
+                            <div class="text-sm text-gray-500 mb-3">€89 p.P.</div>
+                            <!-- Checkbox logic implicit by card select, showing warning if logic check fails -->
+                            <div class="text-xs text-primary"
+                                x-show="activities.cookingClass && !isCookingClassAllowed()">
+                                <span class="font-bold">Hinweis:</span> Nur für 7-10 Personen.
+                            </div>
+                        </div>
+
+                        <div @click="activities.kitchenRental = !activities.kitchenRental"
+                            class="cursor-pointer border-2 rounded-2xl p-5 transition-all duration-300"
+                            :class="activities.kitchenRental ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-300'">
+                            <div class="font-bold mb-1">Küchenmiete</div>
+                            <div class="text-sm text-gray-500 mb-3">€39 p.P.</div>
+                        </div>
+                    </div>
+                    <!-- Global Warning for Cooking Class -->
+                    <div x-show="showCookingWarning" x-transition
+                        class="mt-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        Der Kochkurs ist nur für Gruppen zwischen 7 und 10 Personen verfügbar.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Summary -->
+            <div x-show="step === 4" x-transition:enter="transition ease-out duration-300 transform"
+                x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0"
+                x-transition:leave="transition ease-in duration-200 transform"
+                x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-8"
+                class="absolute inset-0 p-6 sm:p-10 overflow-y-auto">
+                <h2 class="text-3xl font-serif font-bold mb-2">Zusammenfassung</h2>
+                <p class="text-gray-500 mb-8">Bitte überprüfen Sie Ihre Auswahl.</p>
+
+                <div class="bg-bg rounded-2xl p-6 mb-6">
+                    <div class="space-y-4 text-sm sm:text-base">
+                        <!-- Date & Participants -->
+                        <div class="flex justify-between border-b border-gray-200 pb-3">
+                            <span class="text-gray-600">Datum & Gäste</span>
+                            <span class="font-medium text-right"><span x-text="formatDate(date)"></span><br><span
+                                    x-text="participants + ' Personen'"></span></span>
+                        </div>
+
+                        <!-- Package -->
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Tagungspauschale (<span
+                                    x-text="packageType === 'full' ? 'Ganztags' : 'Halbtags'"></span>) à €<span
+                                    x-text="prices.package[packageType]"></span></span>
+                            <span class="font-medium">€<span x-text="calculateLineItem('package')"></span></span>
+                        </div>
+
+                        <!-- Room -->
+                        <template x-if="room && roomCount > 0">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Hotelzimmer (<span x-text="roomCount"></span>x) à €<span
+                                        x-text="prices.room"></span></span>
+                                <span class="font-medium">€<span x-text="calculateLineItem('room')"></span></span>
+                            </div>
+                        </template>
+
+                        <!-- Dinner -->
+                        <template x-if="dinner && dinnerCount > 0">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Abendessen (<span x-text="dinnerCount"></span>x) à €<span
+                                        x-text="prices.dinner"></span></span>
+                                <span class="font-medium">€<span x-text="calculateLineItem('dinner')"></span></span>
+                            </div>
+                        </template>
+
+                        <!-- Extras -->
+                        <template x-if="extras.sandwiches">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Sandwiches (<span x-text="participants"></span>x) à €<span
+                                        x-text="prices.sandwiches"></span></span>
+                                <span class="font-medium">€<span x-text="calculateLineItem('sandwiches')"></span></span>
+                            </div>
+                        </template>
+                        <template x-if="extras.salad">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Salatbuffet (<span x-text="participants"></span>x) à €<span
+                                        x-text="prices.salad"></span></span>
+                                <span class="font-medium">€<span x-text="calculateLineItem('salad')"></span></span>
+                            </div>
+                        </template>
+                        <template x-if="extras.wine && !isWineDisabled">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Weinbegleitung (<span x-text="dinnerCount"></span>x) à
+                                    €<span x-text="prices.wine"></span></span>
+                                <span class="font-medium">€<span x-text="calculateLineItem('wine')"></span></span>
+                            </div>
+                        </template>
+
+                        <!-- Activities -->
+                        <template x-if="activities.cookingClass && isCookingClassAllowed()">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Kochkurs (<span x-text="participants"></span>x) à €<span
+                                        x-text="prices.cookingClass"></span></span>
+                                <span class="font-medium">€<span
+                                        x-text="calculateLineItem('cookingClass')"></span></span>
+                            </div>
+                        </template>
+                        <template x-if="activities.kitchenRental">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Küchenmiete (<span x-text="participants"></span>x) à €<span
+                                        x-text="prices.kitchenRental"></span></span>
+                                <span class="font-medium">€<span
+                                        x-text="calculateLineItem('kitchenRental')"></span></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Totals -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-gray-500">
+                        <span>Zwischensumme</span>
+                        <span>€<span x-text="subTotal.toFixed(2)"></span></span>
+                    </div>
+
+                    <template x-if="discount > 0">
+                        <div class="flex justify-between items-center text-primary font-medium">
+                            <span>Saison-Rabatt (15%)</span>
+                            <span>-€<span x-text="discount.toFixed(2)"></span></span>
+                        </div>
+                    </template>
+
+                    <div
+                        class="flex justify-between items-center text-2xl font-serif font-bold pt-4 border-t border-gray-100">
+                        <span>Gesamtsumme</span>
+                        <span>€<span x-text="total.toFixed(2)"></span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer / Navigation -->
+        <footer class="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-gray-100 p-4 z-50">
+            <div class="max-w-3xl mx-auto flex justify-between items-center">
+                <button @click="step > 1 ? step-- : null"
+                    class="px-6 py-3 rounded-xl font-medium text-gray-500 hover:text-dark transition-colors"
+                    :class="step === 1 ? 'invisible' : ''">
+                    Zurück
+                </button>
+
+                <button x-show="step < 4" @click="nextStep()"
+                    class="bg-dark text-white hover:bg-black px-8 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="!isValidStep()">
+                    Weiter
+                </button>
+
+                <button x-show="step === 4" @click="submitOffer()"
+                    class="bg-primary text-white hover:bg-[#b06a33] px-8 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all">
+                    Angebot anfordern
+                </button>
+            </div>
+        </footer>
+
+    </main>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('seminarConfig', () => ({
+                step: 1,
+                date: '',
+                customerId: '',
+                isExistingCustomer: false,
+                customerName: '',
+                newCustomer: {
+                    firstname: '',
+                    lastname: '',
+                    company: '',
+                    email: '',
+                    phone: ''
+                },
+                participants: 10,
+                packageType: 'half',
+                room: false,
+                roomCount: 0,
+                dinner: false,
+                dinnerCount: 0,
+                extras: {
+                    sandwiches: false,
+                    salad: false,
+                    wine: false
+                },
+                activities: {
+                    cookingClass: false,
+                    kitchenRental: false
+                },
+                showCookingWarning: false,
+
+                prices: {
+                    package: { full: 68, half: 49 },
+                    room: 103,
+                    dinner: 39,
+                    sandwiches: 7,
+                    salad: 15,
+                    wine: 22,
+                    cookingClass: 89,
+                    kitchenRental: 39
+                },
+
+                async init() {
+                    // Get Customer ID from URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const cid = urlParams.get('customer');
+
+                    if (cid) {
+                        try {
+                            const res = await fetch('/api/customer/' + cid);
+                            const data = await res.json();
+                            if (data && data.kunden_id) {
+                                this.customerId = data.kunden_id;
+                                this.customerName = `${data.kontakt_vorname} ${data.kontakt_familienname}`;
+                                this.isExistingCustomer = true;
+                            }
+                        } catch (e) { console.error(e); }
+                    }
+
+                    // Sync counters validation
+                    this.$watch('participants', (val) => {
+                        if (this.room) this.roomCount = val;
+                        if (this.dinner) this.dinnerCount = val;
+                        // Re-validate cooking class if active
+                        if (this.activities.cookingClass && (val < 7 || val > 10)) {
+                            this.showCookingWarning = true;
+                        } else {
+                            this.showCookingWarning = false;
+                        }
+                    });
+
+                    // When activating room/dinner, default count to participants
+                    this.$watch('room', (val) => val ? this.roomCount = this.participants : this.roomCount = 0);
+                    this.$watch('dinner', (val) => val ? this.dinnerCount = this.participants : this.dinnerCount = 0);
+
+                    // Wine dependency
+                    this.$watch('dinner', (val) => {
+                        if (!val) this.extras.wine = false;
+                    });
+                },
+
+                toggleDinner() {
+                    this.dinner = !this.dinner;
+                },
+
+                toggleCookingClass() {
+                    this.activities.cookingClass = !this.activities.cookingClass;
+                    if (this.activities.cookingClass && !this.isCookingClassAllowed()) {
+                        this.showCookingWarning = true;
+                    } else {
+                        this.showCookingWarning = false;
+                    }
+                },
+
+                get isWineDisabled() {
+                    return !this.dinner;
+                },
+
+                isCookingClassAllowed() {
+                    return this.participants >= 7 && this.participants <= 10;
+                },
+
+                isValidStep() {
+                    if (this.step === 1) {
+                        const dateValid = this.date !== '' && this.participants > 0;
+                        if (this.isExistingCustomer) return dateValid;
+                        // New Customer Validation
+                        return dateValid &&
+                            this.newCustomer.firstname.length > 1 &&
+                            this.newCustomer.lastname.length > 1 &&
+                            this.newCustomer.email.includes('@');
+                    }
+                    return true;
+                },
+
+                nextStep() {
+                    if (this.isValidStep()) {
+                        this.step++;
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                },
+
+                // Calculations
+                get subTotal() {
+                    let sum = 0;
+                    // Package
+                    sum += this.prices.package[this.packageType] * this.participants;
+                    // Room
+                    if (this.room) sum += this.prices.room * this.roomCount;
+                    // Dinner
+                    if (this.dinner) sum += this.prices.dinner * this.dinnerCount;
+                    // Extras
+                    if (this.extras.sandwiches) sum += this.prices.sandwiches * this.participants;
+                    if (this.extras.salad) sum += this.prices.salad * this.participants;
+                    if (this.extras.wine && !this.isWineDisabled) sum += this.prices.wine * this.dinnerCount;
+                    // Activities
+                    if (this.activities.cookingClass && this.isCookingClassAllowed()) sum += this.prices.cookingClass * this.participants;
+                    if (this.activities.kitchenRental) sum += this.prices.kitchenRental * this.participants;
+
+                    return sum;
+                },
+
+                get discount() {
+                    if (!this.date) return 0;
+                    const selectedDate = new Date(this.date);
+                    const currentYear = new Date().getFullYear();
+                    // Check if selected date is within current year (up to Dec 31)
+                    if (selectedDate.getFullYear() === currentYear) {
+                        return this.subTotal * 0.15;
+                    }
+                    return 0;
+                },
+
+                get total() {
+                    return this.subTotal - this.discount;
+                },
+
+                calculateLineItem(type) {
+                    switch (type) {
+                        case 'package': return (this.prices.package[this.packageType] * this.participants).toFixed(2);
+                        case 'room': return (this.prices.room * this.roomCount).toFixed(2);
+                        case 'dinner': return (this.prices.dinner * this.dinnerCount).toFixed(2);
+                        case 'sandwiches': return (this.prices.sandwiches * this.participants).toFixed(2);
+                        case 'salad': return (this.prices.salad * this.participants).toFixed(2);
+                        case 'wine': return (this.prices.wine * this.dinnerCount).toFixed(2);
+                        case 'cookingClass': return (this.prices.cookingClass * this.participants).toFixed(2);
+                        case 'kitchenRental': return (this.prices.kitchenRental * this.participants).toFixed(2);
+                            return 0;
+                    }
+                },
+
+                formatDate(dateStr) {
+                    if (!dateStr) return '';
+                    const d = new Date(dateStr);
+                    return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                },
+
+                async submitOffer() {
+                    const payload = {
+                        customer_id: this.customerId, // Might be empty if new
+                        new_customer: !this.isExistingCustomer ? this.newCustomer : null,
+                        date: this.date,
+                        participants: this.participants,
+                        package: this.packageType,
+                        room: { active: this.room, count: this.roomCount },
+                        dinner: { active: this.dinner, count: this.dinnerCount },
+                        extras: this.extras,
+                        activities: this.activities,
+                        total: this.total.toFixed(2)
+                    };
+
+                    try {
+                        const response = await fetch('/api/offer', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const result = await response.json();
+
+                        if (result.success) {
+                            alert('Angebot erfolgreich erstellt! Nummer: ' + result.inquiryId + '\nDatei: ' + (result.file || 'wird generiert'));
+                        } else {
+                            alert('Fehler: ' + result.error);
+                        }
+                    } catch (e) {
+                        alert('Netzwerkfehler: ' + e.message);
+                    }
+                }
+            }))
+        })
+    </script>
+</body>
+
+</html>

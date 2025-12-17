@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Genuss am Hof</title>
+    <link rel="icon" type="image/png" href="logo_favicon.png">
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#ce7e40',
+                        dark: '#3c3c3b',
+                        bg: '#f9f7f2',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 text-dark font-sans" x-data="adminApp()">
+
+    <!-- LOGIN SCREEN -->
+    <template x-if="!isAuthenticated">
+        <div class="min-h-screen flex items-center justify-center p-4">
+            <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+                <h1 class="font-serif text-2xl font-bold mb-6 text-center">Admin Login</h1>
+                <form @submit.prevent="login">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Passwort</label>
+                        <input type="password" x-model="password"
+                            class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-primary outline-none">
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-primary text-white py-3 rounded-lg font-bold hover:bg-opacity-90 transition">
+                        Einloggen
+                    </button>
+                    <p x-show="loginError" class="text-red-500 text-sm mt-3 text-center">Falsches Passwort</p>
+                </form>
+            </div>
+        </div>
+    </template>
+
+    <!-- DASHBOARD -->
+    <template x-if="isAuthenticated">
+        <div class="min-h-screen flex flex-col">
+            <!-- Navbar -->
+            <nav
+                class="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <img src="logo.png" alt="Logo" class="h-8 w-auto">
+                    <div class="text-dark opacity-60 text-base font-sans font-normal border-l pl-3 border-gray-300">
+                        Admin Dashboard</div>
+                </div>
+                <!-- <div class="font-serif font-bold text-xl text-primary">Genuss am Hof <span
+                        class="text-dark opacity-60 ml-2 text-base font-sans font-normal">Admin Dashboard</span></div> -->
+                <button @click="logout" class="text-sm font-medium text-gray-500 hover:text-red-500">Abmelden</button>
+            </nav>
+
+            <main class="flex-1 p-6 max-w-7xl mx-auto w-full">
+
+                <!-- Tabs -->
+                <div class="flex space-x-4 mb-8">
+                    <button @click="currentTab = 'inquiries'; fetchInquiries()"
+                        class="px-4 py-2 rounded-lg font-medium transition-colors"
+                        :class="currentTab === 'inquiries' ? 'bg-dark text-white' : 'bg-white text-gray-500 hover:bg-gray-100'">
+                        Anfragen
+                    </button>
+                    <button @click="currentTab = 'customers'; fetchCustomers()"
+                        class="px-4 py-2 rounded-lg font-medium transition-colors"
+                        :class="currentTab === 'customers' ? 'bg-dark text-white' : 'bg-white text-gray-500 hover:bg-gray-100'">
+                        Kunden
+                    </button>
+                </div>
+
+                <!-- Inquiries Table -->
+                <div x-show="currentTab === 'inquiries'"
+                    class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead
+                            class="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs uppercase tracking-wider">
+                            <tr>
+                                <th class="p-4">ID</th>
+                                <th class="p-4">Kunde</th>
+                                <th class="p-4">Datum</th>
+                                <th class="p-4">Teilnehmer</th>
+                                <th class="p-4">Total</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <template x-for="inquiry in filteredInquiries" :key="inquiry.anfrage_id">
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 font-mono text-xs" x-text="inquiry.anfrage_id"></td>
+                                    <td class="p-4">
+                                        <button @click="openCustomerById(inquiry.kunden_id)"
+                                            class="text-left hover:text-primary transition-colors group">
+                                            <div class="font-medium group-hover:underline"
+                                                x-text="inquiry.firma_name || 'Privat'"></div>
+                                            <div class="text-xs text-gray-500"
+                                                x-text="inquiry.kontakt_vorname + ' ' + inquiry.kontakt_familienname">
+                                            </div>
+                                        </button>
+                                    </td>
+                                    <td class="p-4" x-text="formatDate(inquiry.start_datum)"></td>
+                                    <td class="p-4" x-text="inquiry.num_teilnehmer"></td>
+                                    <td class="p-4 font-medium">€<span x-text="inquiry.budget_eur"></span></td>
+                                    <td class="p-4"><span
+                                            class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full"
+                                            x-text="inquiry.status"></span></td>
+                                    <td class="p-4 text-right">
+                                        <button @click="viewRequest(inquiry)"
+                                            class="text-primary hover:text-dark font-medium text-sm">Details</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                    <div x-show="inquiries.length === 0" class="p-8 text-center text-gray-400">Keine Anfragen gefunden.
+                    </div>
+                </div>
+
+                <!-- Customers Table -->
+                <div x-show="currentTab === 'customers'"
+                    class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead
+                            class="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs uppercase tracking-wider">
+                            <tr>
+                                <th class="p-4">ID</th>
+                                <th class="p-4">Firma</th>
+                                <th class="p-4">Name</th>
+                                <th class="p-4">Kontakt</th>
+                                <th class="p-4">Registriert am</th>
+                                <th class="p-4"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <template x-for="customer in customers" :key="customer.kunden_id">
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4 font-mono text-xs" x-text="customer.kunden_id"></td>
+                                    <td class="p-4 font-medium" x-text="customer.firma_name || '-'"></td>
+                                    <td class="p-4"
+                                        x-text="customer.kontakt_vorname + ' ' + customer.kontakt_familienname"></td>
+                                    <td class="p-4 text-sm text-gray-500">
+                                        <div x-text="customer.email"></div>
+                                        <div x-text="customer.telefon"></div>
+                                    </td>
+                                    <td class="p-4 text-sm" x-text="formatDate(customer.erstellt_am)"></td>
+                                    <td class="p-4 text-right space-x-2">
+                                        <button @click="showCustomerInquiries(customer.kunden_id)"
+                                            class="text-gray-500 hover:text-dark font-medium text-sm">Anfragen</button>
+                                        <button @click="editCustomer(customer)"
+                                            class="text-primary hover:text-dark font-medium text-sm">Bearbeiten</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+            </main>
+
+            <!-- Details Modal -->
+            <div x-show="selectedInquiry" class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                style="display: none;">
+                <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="selectedInquiry = null"></div>
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl relative z-10 max-h-[90vh] overflow-y-auto">
+                    <div class="p-6 border-b border-gray-100 flex justify-between items-start">
+                        <div>
+                            <h2 class="font-serif font-bold text-xl mb-1">Anfrage Details</h2>
+                            <div class="text-gray-500 text-sm font-mono" x-text="selectedInquiry?.anfrage_id"></div>
+                        </div>
+                        <button @click="selectedInquiry = null" class="text-gray-400 hover:text-dark">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="uppercase text-xs font-bold text-gray-500 tracking-wider mb-3">Positionen</h3>
+                        <div class="space-y-3">
+                            <template x-for="pos in selectedPositions">
+                                <div
+                                    class="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+                                    <div>
+                                        <div class="font-medium text-sm" x-text="pos.name || pos.produkt_id"></div>
+                                        <div class="text-xs text-gray-500"
+                                            x-text="pos.menge + 'x à €' + pos.einzelpreis"></div>
+                                    </div>
+                                    <div class="font-mono text-sm">€<span x-text="pos.total_eur.toFixed(2)"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="mt-6 flex justify-between items-center bg-gray-50 p-4 rounded-xl">
+                            <span class="font-bold">Gesamt</span>
+                            <span class="font-bold text-xl text-primary">€<span
+                                    x-text="selectedInquiry?.budget_eur"></span></span>
+                        </div>
+
+                        <template x-if="selectedInquiry?.angebot_dateiname">
+                            <div class="mt-4 pt-4 border-t border-gray-100">
+                                <a :href="'/offers/' + selectedInquiry.angebot_dateiname" target="_blank"
+                                    class="block w-full text-center bg-dark text-white py-3 rounded-lg font-bold hover:bg-black transition">
+                                    Angebot öffnen (.docx)
+                                </a>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Edit Modal -->
+            <div x-show="editingCustomer"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+                style="display: none;" @click.self="editingCustomer = null">
+                <div
+                    class="bg-white rounded-2xl shadow-xl w-full max-w-4xl relative z-10 max-h-[90vh] overflow-y-auto flex flex-col">
+                    <div
+                        class="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-20">
+                        <h2 class="font-serif font-bold text-xl">Kunde bearbeiten</h2>
+                        <button @click="editingCustomer = null" class="text-gray-400 hover:text-dark">✕</button>
+                    </div>
+
+                    <div class="p-6 flex-1 overflow-y-auto" x-data="{ tab: 'general' }">
+                        <!-- Modal Tabs -->
+                        <div class="flex space-x-6 border-b border-gray-100 mb-6">
+                            <button @click="tab = 'general'"
+                                :class="{'text-primary border-b-2 border-primary': tab === 'general'}"
+                                class="pb-2 text-sm font-medium text-gray-500">Allgemein</button>
+                            <button @click="tab = 'contact'"
+                                :class="{'text-primary border-b-2 border-primary': tab === 'contact'}"
+                                class="pb-2 text-sm font-medium text-gray-500">Kontaktperson</button>
+                            <button @click="tab = 'responsible'"
+                                :class="{'text-primary border-b-2 border-primary': tab === 'responsible'}"
+                                class="pb-2 text-sm font-medium text-gray-500">Hauptverantw.</button>
+                            <button @click="tab = 'meta'"
+                                :class="{'text-primary border-b-2 border-primary': tab === 'meta'}"
+                                class="pb-2 text-sm font-medium text-gray-500">Intern & Marketing</button>
+                        </div>
+
+                        <form @submit.prevent="saveCustomer" id="custForm">
+                            <!-- GENERAL TAB -->
+                            <div x-show="tab === 'general'" class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Firma
+                                            Name</label>
+                                        <input type="text" x-model="custForm.firma_name"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Rolle</label>
+                                        <select x-model="custForm.rolle"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                            <option value="">- Wählen -</option>
+                                            <option value="Kunde">Kunde</option>
+                                            <option value="Interessent">Interessent</option>
+                                            <option value="Partner">Partner</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Adresse
+                                            (Standort)</label>
+                                        <textarea x-model="custForm.adresse"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm"
+                                            rows="3"></textarea>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Rechnungsadresse</label>
+                                        <textarea x-model="custForm.rechnungsadresse"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm"
+                                            rows="3"></textarea>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <input type="text" x-model="custForm.plz" placeholder="PLZ"
+                                        class="border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    <input type="text" x-model="custForm.stadt" placeholder="Stadt"
+                                        class="col-span-2 border-gray-200 border rounded-lg p-2.5 text-sm">
+                                </div>
+                                <input type="text" x-model="custForm.land" placeholder="Land"
+                                    class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                            </div>
+
+                            <!-- CONTACT TAB -->
+                            <div x-show="tab === 'contact'" class="space-y-4">
+                                <div class="grid grid-cols-4 gap-4">
+                                    <div class="col-span-1">
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Anrede</label>
+                                        <select x-model="custForm.kontakt_anrede"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                            <option value="">-</option>
+                                            <option value="Herr">Herr</option>
+                                            <option value="Frau">Frau</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-1">
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Titel</label>
+                                        <input type="text" x-model="custForm.kontakt_titel"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                    <div class="col-span-2"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Vorname</label>
+                                        <input type="text" x-model="custForm.kontakt_vorname"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Nachname</label>
+                                        <input type="text" x-model="custForm.kontakt_familienname"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">E-Mail</label>
+                                        <input type="email" x-model="custForm.email"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Telefon</label>
+                                        <input type="text" x-model="custForm.telefon"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- RESPONSIBLE TAB -->
+                            <div x-show="tab === 'responsible'" class="space-y-4">
+                                <p class="text-xs text-gray-400 italic">Optional: Falls abweichend von Kontaktperson.
+                                </p>
+                                <div class="grid grid-cols-4 gap-4">
+                                    <div class="col-span-1">
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Anrede</label>
+                                        <select x-model="custForm.hauptverantwortlicher_anrede"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                            <option value="">-</option>
+                                            <option value="Herr">Herr</option>
+                                            <option value="Frau">Frau</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-1">
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Titel</label>
+                                        <input type="text" x-model="custForm.hauptverantwortlicher_titel"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Vorname</label>
+                                        <input type="text" x-model="custForm.hauptverantwortlicher_vorname"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Nachname</label>
+                                        <input type="text" x-model="custForm.hauptverantwortlicher_familienname"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">E-Mail</label>
+                                        <input type="email" x-model="custForm.hauptverantwortlicher_email"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Telefon</label>
+                                        <input type="text" x-model="custForm.hauptverantwortlicher_telefon"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- META TAB -->
+                            <div x-show="tab === 'meta'" class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Sprache</label>
+                                        <select x-model="custForm.sprache"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                            <option value="DE">Deutsch</option>
+                                            <option value="EN">Englisch</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold uppercase text-gray-400 mb-1">Quelle</label>
+                                        <input type="text" x-model="custForm.quelle"
+                                            class="w-full border-gray-200 border rounded-lg p-2.5 text-sm">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Notizen</label>
+                                    <textarea x-model="custForm.notizen"
+                                        class="w-full border-gray-200 border rounded-lg p-2.5 text-sm"
+                                        rows="4"></textarea>
+                                </div>
+                                <div class="border-t border-gray-100 pt-4 space-y-3">
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" x-model="custForm.zustimmung_marketing"
+                                            class="form-checkbox h-5 w-5 text-primary rounded border-gray-300">
+                                        <span class="text-sm font-medium">Zustimmung Marketing erhalten?</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" x-model="custForm.material_gesendet"
+                                            class="form-checkbox h-5 w-5 text-primary rounded border-gray-300">
+                                        <span class="text-sm font-medium">Infomaterial gesendet?</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                        </form>
+                    </div>
+                    <div
+                        class="bg-gray-50 px-6 py-4 flex justify-end gap-3 rounded-b-2xl border-t border-gray-100 sticky bottom-0 z-20">
+                        <button type="button" @click="editingCustomer = null"
+                            class="px-4 py-2 text-gray-500 hover:text-dark">Abbrechen</button>
+                        <button type="button" @click="saveCustomer()"
+                            class="px-6 py-2 bg-primary text-white rounded-lg font-bold shadow-md hover:shadow-lg transition">Speichern</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </template>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('adminApp', () => ({
+                isAuthenticated: localStorage.getItem('adminAuth') === 'true',
+                password: '',
+                loginError: false,
+                currentTab: 'inquiries',
+                inquiries: [],
+                customers: [],
+                selectedInquiry: null,
+                selectedPositions: [],
+                editingCustomer: null,
+                custForm: {},
+                authHeader: localStorage.getItem('adminToken') || '',
+
+                inquiryFilter: '', // To filter inquiries by search/customer
+
+                async login() {
+                    try {
+                        const res = await fetch('/api/admin/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ password: this.password })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.isAuthenticated = true;
+                            this.authHeader = this.password;
+                            localStorage.setItem('adminAuth', 'true');
+                            localStorage.setItem('adminToken', this.password);
+                            this.fetchInquiries();
+                        } else {
+                            this.loginError = true;
+                        }
+                    } catch (e) {
+                        this.loginError = true;
+                    }
+                },
+
+                logout() {
+                    this.isAuthenticated = false;
+                    this.password = '';
+                    this.inquiries = [];
+                    this.customers = [];
+                    localStorage.removeItem('adminAuth');
+                    localStorage.removeItem('adminToken');
+                },
+
+                init() {
+                    if (this.isAuthenticated) {
+                        this.fetchInquiries();
+                    }
+                },
+
+                get filteredInquiries() {
+                    if (!this.inquiryFilter) return this.inquiries;
+                    const search = this.inquiryFilter.toLowerCase();
+                    return this.inquiries.filter(i =>
+                        (i.firma_name && i.firma_name.toLowerCase().includes(search)) ||
+                        (i.kunden_id && i.kunden_id.toLowerCase().includes(search))
+                    );
+                },
+
+                async fetchInquiries() {
+                    try {
+                        const res = await fetch('/api/admin/inquiries', {
+                            headers: { 'x-admin-password': this.authHeader }
+                        });
+                        if (res.status === 401) this.logout();
+                        this.inquiries = await res.json();
+                    } catch (e) { console.error(e); }
+                },
+
+                async fetchCustomers() {
+                    try {
+                        const res = await fetch('/api/admin/customers', {
+                            headers: { 'x-admin-password': this.authHeader }
+                        });
+                        if (res.status === 401) this.logout();
+                        this.customers = await res.json();
+                    } catch (e) { console.error(e); }
+                },
+
+                async viewRequest(inquiry) {
+                    this.selectedInquiry = inquiry;
+                    try {
+                        const res = await fetch(`/api/admin/inquiry/${inquiry.anfrage_id}/positions`, {
+                            headers: { 'x-admin-password': this.authHeader }
+                        });
+                        this.selectedPositions = await res.json();
+                    } catch (e) { console.error(e); }
+                },
+
+                async openCustomerById(kundenId) {
+                    this.currentTab = 'customers';
+                    await this.fetchCustomers(); // Ensure we have data
+                    const customer = this.customers.find(c => c.kunden_id === kundenId);
+                    if (customer) {
+                        this.editCustomer(customer);
+                    }
+                },
+
+                showCustomerInquiries(kundenId) {
+                    this.currentTab = 'inquiries';
+                    this.fetchInquiries();
+                    this.inquiryFilter = kundenId; // Simple filter logic
+                },
+
+                editCustomer(customer) {
+                    this.editingCustomer = customer;
+                    // Clone data to form and handle checkboxes
+                    this.custForm = { ...customer };
+                    // String to Boolean for checkboxes if needed, though SQLite stores text 'true' usually or 1/0
+                    // We'll treat them as simple text/value binds usually works in Alpine with loose typing, 
+                    // but for checkboxes x-model expects boolean.
+                    this.custForm.zustimmung_marketing = customer.zustimmung_marketing === 'true';
+                    this.custForm.material_gesendet = customer.material_gesendet === 'true';
+                },
+
+                async saveCustomer() {
+                    try {
+                        // bool -> string for SQLite text column if that's how we store it
+                        const payload = { ...this.custForm };
+                        payload.zustimmung_marketing = this.custForm.zustimmung_marketing ? 'true' : 'false';
+                        payload.material_gesendet = this.custForm.material_gesendet ? 'true' : 'false';
+
+                        const res = await fetch(`/api/admin/customer/${this.custForm.kunden_id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-admin-password': this.authHeader
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        if (res.ok) {
+                            this.editingCustomer = null;
+                            this.fetchCustomers(); // Refresh list
+                        } else {
+                            alert('Fehler beim Speichern');
+                        }
+                    } catch (e) { alert('Fehler: ' + e.message); }
+                },
+
+                formatDate(str) {
+                    if (!str) return '-';
+                    return new Date(str).toLocaleDateString('de-DE');
+                }
+            }))
+        })
+    </script>
+</body>
+
+</html>
