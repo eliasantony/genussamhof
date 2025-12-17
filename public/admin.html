@@ -215,11 +215,22 @@
                                     x-text="selectedInquiry?.budget_eur"></span></span>
                         </div>
 
-                        <template x-if="selectedInquiry?.angebot_dateiname">
+                        <template x-if="selectedInquiry?.angebot_url">
                             <div class="mt-4 pt-4 border-t border-gray-100">
-                                <a :href="'/offers/' + selectedInquiry.angebot_dateiname" target="_blank"
+                                <a :href="selectedInquiry.angebot_url" target="_blank"
                                     class="block w-full text-center bg-dark text-white py-3 rounded-lg font-bold hover:bg-black transition">
-                                    Angebot öffnen (.docx)
+                                    Angebot herunterladen (.docx)
+                                </a>
+                            </div>
+                        </template>
+                        <!-- Fallback for legacy local files (optional, mostly for dev) -->
+                        <template x-if="!selectedInquiry?.angebot_url && selectedInquiry?.angebot_dateiname">
+                            <div class="mt-4 pt-4 border-t border-gray-100">
+                                <span class="text-xs text-gray-400 block text-center mb-1">Lokale Datei (nicht auf
+                                    Vercel verfügbar)</span>
+                                <a :href="'/offers/' + selectedInquiry.angebot_dateiname" target="_blank"
+                                    class="block w-full text-center bg-gray-200 text-dark py-3 rounded-lg font-bold hover:bg-gray-300 transition">
+                                    Angebot öffnen (Lokal)
                                 </a>
                             </div>
                         </template>
